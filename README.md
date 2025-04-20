@@ -49,3 +49,89 @@ make -jx
 After compile completed, you will have the bootloader file for F1C100S:<br>
 ZImage: arch/arm/boot/zImage /mnt/<br>
 Device tree: arch/arm/boot/dts/suniv-f1c100s-licheepi-nano.dtb /mnt/
+
+---
+---
+
+<h1>
+Enable LCD display (1024*600 pixel)
+</h1>
+
+You can check available LCD support on "250420-F1C100S-LinuxKernel/linux/drivers/gpu/drm/panel/panel-simple.c"
+
+Example with 7 inchs 1024*600 LCD, You can use
+
+```C
+static const struct drm_display_mode auo_b101aw03_mode = {
+	.clock = 51450,
+	.hdisplay = 1024,
+	.hsync_start = 1024 + 156,
+	.hsync_end = 1024 + 156 + 8,
+	.htotal = 1024 + 156 + 8 + 156,
+	.vdisplay = 600,
+	.vsync_start = 600 + 16,
+	.vsync_end = 600 + 16 + 6,
+	.vtotal = 600 + 16 + 6 + 16,
+	.vrefresh = 60,
+};
+
+static const struct panel_desc auo_b101aw03 = {
+	.modes = &auo_b101aw03_mode,
+	.num_modes = 1,
+	.bpc = 6,
+	.size = {
+		.width = 223,
+		.height = 125,
+	},
+};
+```
+
+Update 250420-F1C100S-LinuxKernel/linux/scripts/dtc/include-prefixes/arm/suniv-f1c100s-licheepi-nano.dts to below:
+
+```bash
+Change:
+/***/
+	panel: panel {
+		compatible = "lg,lb070wv8", "simple-panel";
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+		enable-gpios = <&pio 4 6 GPIO_ACTIVE_HIGH>;
+		power-supply = <&reg_vcc3v3>;
+
+ 		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+ 			panel_input: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&tcon0_out_lcd>;
+			};
+		};
+	};
+/***/    
+To
+/***/
+	panel: panel {
+		//compatible = "lg,lb070wv8", "simple-panel";   //  Comment this line
+		compatible = "auo,b101aw03", "simple-panel";    // Add this line
+		
+		#address-cells = <1>;
+		#size-cells = <0>;
+		enable-gpios = <&pio 4 6 GPIO_ACTIVE_HIGH>;
+		power-supply = <&reg_vcc3v3>;
+
+ 		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+ 			panel_input: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&tcon0_out_lcd>;
+			};
+		};
+	};    
+/***/
+```
